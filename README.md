@@ -80,12 +80,6 @@ Each API call gives up after 5 seconds, and the card for that API then shows "un
 
 `npm run audit:sonatype` runs Sonatype's `auditjs` against [Sonatype Guide](https://guide.sonatype.com), the service that replaced OSS Index. It checks every installed package, development tools included, and exits with an error when one has a known vulnerability.
 
-It needs a free API token:
-
-1. Create an account at https://guide.sonatype.com and make a token under Settings > API Tokens.
-2. Locally, put it in `.env.local` as `AUDITJS_GUIDE_TOKEN=...`.
-3. On GitHub, add it as a repository secret named `AUDITJS_GUIDE_TOKEN` (Settings > Secrets and variables > Actions).
-
 `.github/workflows/security.yml` runs the scan when `package.json` or `package-lock.json` changes, every Monday at 06:00 UTC, and on demand. Sonatype charges credits per package scanned, which is why it does not run on every push.
 
 To accept a finding you cannot fix yet, add an `auditjs.json` file at the project root:
