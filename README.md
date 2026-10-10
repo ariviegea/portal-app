@@ -2,6 +2,8 @@
 
 A small developer portal built with Next.js. The `/portal` page shows one card per external API. Three public APIs are wired in as placeholders: the npm registry, Maven Central and GitHub.
 
+For how the app is put together and what every npm package is for, see [docs/SETUP.md](docs/SETUP.md).
+
 ## Requirements
 
 - Node.js 24 or later (`.nvmrc` pins the major version)
