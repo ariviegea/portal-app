@@ -35,7 +35,7 @@ export default defineConfig({
     },
     {
       command: `npm run build && npm run start -- -p ${APP_PORT}`,
-      url: `http://localhost:${APP_PORT}/portal`,
+      url: `http://localhost:${APP_PORT}/`,
       timeout: 180_000,
       reuseExistingServer: !isCI,
       env: {
