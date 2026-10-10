@@ -3,7 +3,6 @@ name: CI
 on:
   push:
     branches: [main]
-    tags: ["v*"]
   pull_request:
 
 permissions:
@@ -56,26 +55,15 @@ jobs:
           path: playwright-report/
           retention-days: 7
 
-  deploy:
-    name: Deploy to ${{ startsWith(github.ref, 'refs/tags/v') && 'production' || 'staging' }}
+  build:
+    name: Build the deployment package
     needs: verify
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    # A v* tag goes to production; a push to main goes to staging.
-    environment: ${{ startsWith(github.ref, 'refs/tags/v') && 'production' || 'staging' }}
-    permissions:
-      contents: read
-      id-token: write # lets GitHub prove its identity to Azure without a password
     steps:
       - name: Check out the code
         uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-
-      - name: Check that a release tag points at a commit on main
-        if: startsWith(github.ref, 'refs/tags/')
-        run: git merge-base --is-ancestor "$GITHUB_SHA" origin/main
 
       - name: Set up Node.js
         uses: actions/setup-node@v7
@@ -96,6 +84,32 @@ jobs:
           if [ -d public ]; then cp -r public .next/standalone/; fi
           cp -r .next/static .next/standalone/.next/
 
+      # Zipped so the hidden .next folder is kept; both environments receive this exact file.
+      - name: Package the bundle
+        run: cd .next/standalone && zip -qr "$GITHUB_WORKSPACE/portal-app.zip" .
+
+      - name: Upload the package
+        uses: actions/upload-artifact@v7
+        with:
+          name: portal-app
+          path: portal-app.zip
+          if-no-files-found: error
+          retention-days: 7
+
+  deploy-staging:
+    name: Deploy to staging
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: staging
+    permissions:
+      id-token: write # lets GitHub prove its identity to Azure without a password
+    steps:
+      - name: Download the package
+        uses: actions/download-artifact@v8
+        with:
+          name: portal-app
+
       - name: Sign in to Azure
         uses: azure/login@v3
         with:
@@ -107,4 +121,44 @@ jobs:
         uses: azure/webapps-deploy@v3
         with:
           app-name: ${{ vars.AZURE_WEBAPP_NAME }}
-          package: .next/standalone
+          package: portal-app.zip
+
+  deploy-production:
+    name: Deploy to production
+    needs: deploy-staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Waits for approval under "Review deployments".
+    environment: production
+    permissions:
+      contents: write # to create the release tag
+      id-token: write
+    steps:
+      - name: Download the package
+        uses: actions/download-artifact@v8
+        with:
+          name: portal-app
+
+      - name: Sign in to Azure
+        uses: azure/login@v3
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy to Azure App Service
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ vars.AZURE_WEBAPP_NAME }}
+          package: portal-app.zip
+
+      # Records the release: the highest vX.Y.Z tag plus one, e.g. v0.1.1 -> v0.1.2.
+      - name: Tag the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          latest=$(gh api "repos/$GITHUB_REPOSITORY/tags" --paginate --jq '.[].name' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n 1)
+          latest=${latest:-v0.0.0}
+          next="${latest%.*}.$(( ${latest##*.} + 1 ))"
+          gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$next" -f sha="$GITHUB_SHA"
+          echo "Released $next" >> "$GITHUB_STEP_SUMMARY"
