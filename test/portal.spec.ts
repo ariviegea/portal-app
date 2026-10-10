@@ -35,7 +35,7 @@ test.describe("portal page", () => {
   });
 
   test("Refresh loads new data", async ({ page }) => {
-    const npm = page.getByTestId("source-npm");
+    const npm = page.getByTestId("source-npm").filter({visible: true});
     await expect(npm).toContainText(/next 1\.0\.\d+/);
     const before = await npm.innerText();
 
