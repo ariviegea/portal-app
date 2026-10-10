@@ -17,6 +17,7 @@ export default function PortalPage() {
     <PortalLayout>
       <Suspense fallback={<PortalLoading />}>
         <PortalResults />
+        <h1>Welcome</h1>
       </Suspense>
     </PortalLayout>
   );
