@@ -23,7 +23,7 @@ Then open http://localhost:3000/portal.
 | `npm run build` | Build for production |
 | `npm run start` | Serve the production build |
 | `npm run lint` | Run ESLint |
-| `npm run typecheck` | Check types with TypeScript |
+| `npm run typecheck` | Generate Next.js route types, then check types with TypeScript |
 | `npm test` | Run the unit tests (Vitest) |
 | `npm run test:e2e` | Build the app and run the end-to-end tests (Playwright) |
 

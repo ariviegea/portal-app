@@ -39,6 +39,7 @@
 - **`@types/node` raised to 24** to satisfy Vitest 5. `vitest.config.ts` became `vitest.config.mts`.
 - **Local E2E browser:** Playwright no longer ships Chromium for macOS 13, so local runs use the installed Google Chrome; CI uses bundled Chromium.
 - **Playwright waits on `/`** instead of `/portal` to decide the app has started.
+- **`typecheck` runs `next typegen` first:** `LayoutProps` and other route types are generated files that git ignores, so a fresh checkout (and CI) has none until they are generated.
 - **Git:** the installed git predates `git init -b`; the branch was named `main` separately.
 - **Maven Central:** on 2026-10-10 `search.maven.org` did not answer fielded queries within 30 seconds. The model and default address are unchanged; the card shows "unavailable" after the 5 second timeout. `central.sonatype.com/solrsearch/select` answers quickly but returns a different shape (one row per version, no `latestVersion`).
 
