@@ -58,7 +58,7 @@ The API addresses come from environment variables. All are optional.
 | `MAVEN_API_URL` | `https://search.maven.org` |
 | `GITHUB_API_URL` | `https://api.github.com` |
 
-For local overrides, create a `.env.local` file (it is ignored by git). Never commit API keys.
+Keys, secrets and local overrides go in `.env.local`: copy `.env.example` to `.env.local` and fill in the values. Git ignores every `.env*` file except `.env.example`, so real values are never pushed. Keep only placeholders in `.env.example`, and never give a secret a name starting with `NEXT_PUBLIC_`, because Next.js sends those values to the browser.
 
 Each API call gives up after 5 seconds, and the card for that API then shows "unavailable".
 
