@@ -30,6 +30,18 @@
 4. **Environment variables missing or written with a trailing slash:** defaults apply and URLs are still built correctly. Test: Task 2 Step 5.
 5. **Stale data after Refresh:** pressing Refresh must fetch again, not replay a cached page. Test: Task 4 Step 2 (`Refresh loads new data`).
 
+## Changes made during implementation
+
+- **Node install:** Homebrew on this Mac is too old (3.3.6), so Node 24.21.0 came from the official nodejs.org build, unpacked to `~/.local/node`.
+- **No `output: "standalone"`:** `next start` does not serve a standalone build, and the E2E tests use `next start`. Packaging for Azure is left to the deployment plan.
+- **No `export const dynamic`:** Next.js 16.4 enables Cache Components by default. The page keeps a static shell and loads the API data inside `<Suspense>` after `await connection()`, so data is fetched per request. `fetchJson` passes no `cache` option because fetches are uncached by default in this mode.
+- **View split in two:** `PortalLayout` (heading and Refresh, part of the static shell) and `PortalView` (the cards, streamed in).
+- **`@types/node` raised to 24** to satisfy Vitest 5. `vitest.config.ts` became `vitest.config.mts`.
+- **Local E2E browser:** Playwright no longer ships Chromium for macOS 13, so local runs use the installed Google Chrome; CI uses bundled Chromium.
+- **Playwright waits on `/`** instead of `/portal` to decide the app has started.
+- **Git:** the installed git predates `git init -b`; the branch was named `main` separately.
+- **Maven Central:** on 2026-10-10 `search.maven.org` did not answer fielded queries within 30 seconds. The model and default address are unchanged; the card shows "unavailable" after the 5 second timeout. `central.sonatype.com/solrsearch/select` answers quickly but returns a different shape (one row per version, no `latestVersion`).
+
 ---
 
 ## File Structure
