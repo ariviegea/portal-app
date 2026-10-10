@@ -142,4 +142,4 @@ Neither workflow has run on GitHub yet; the repository has not been pushed. Depl
 
 - **Maven Central:** on 2026-10-10 the default address did not answer the app's lookup, so that card showed "unavailable" against the live API.
 - **APIs are placeholders:** the three APIs stand in for the real ones the portal will use.
-- **`npm audit` warnings:** 5 high-severity warnings in packages that `eslint-config-next` depends on. They affect the lint tooling only, not the running app.
+- **Accepted vulnerabilities:** the Sonatype scan found 6 known vulnerabilities in 4 packages (`braces`, `minimatch`, `uri-js`, `zod`). All are pulled in by the lint and audit tools, none ship with the running app, and none had a fixed version on 2026-10-10. They are listed with reasons in `auditjs.json`, which makes the scan pass. Review that file when updating dependencies and delete entries once fixes exist. `npm audit` reports the `braces` chain as 5 high-severity warnings.

@@ -1,0 +1,28 @@
+{
+  "ignore": [
+    {
+      "id": "CVE-2026-93687",
+      "reason": "braces@3.0.3 (via eslint-config-next > fast-glob > micromatch). Denial of service on crafted brace patterns. Lint tooling only, not shipped with the app. No fixed version exists (3.0.3 is the latest). Accepted 2026-10-10; remove when a fix is released."
+    },
+    {
+      "id": "CVE-2026-27904",
+      "reason": "minimatch@3.1.5 (via eslint and its plugins, and auditjs). Slow matching on crafted glob patterns. Lint and audit tooling only, not shipped with the app. 3.1.5 is the latest 3.x release and these tools cannot use minimatch 10. Accepted 2026-10-10; remove when the tools move off minimatch 3."
+    },
+    {
+      "id": "CVE-2026-93690",
+      "reason": "uri-js@4.4.1 (via eslint > ajv). Infinite loop on crafted URIs. Lint tooling only, not shipped with the app. No fixed version exists (4.4.1 is the latest). Accepted 2026-10-10; remove when eslint drops ajv 6."
+    },
+    {
+      "id": "CVE-2026-93751",
+      "reason": "uri-js@4.4.1 (via eslint > ajv). Lenient percent-decoding. Lint tooling only, not shipped with the app. No fixed version exists. Accepted 2026-10-10; remove when eslint drops ajv 6."
+    },
+    {
+      "id": "CVE-2026-103387",
+      "reason": "uri-js@4.4.1 (via eslint > ajv). Uncaught exception on crafted mailto URIs. Lint tooling only, not shipped with the app. No fixed version exists. Accepted 2026-10-10; remove when eslint drops ajv 6."
+    },
+    {
+      "id": "CVE-2023-54404",
+      "reason": "zod@4.6.5 (via eslint-plugin-react-hooks). Memory exhaustion when validating very large arrays. Lint tooling only, not shipped with the app. No fixed version exists (4.6.5 is the latest). Accepted 2026-10-10; remove when a fix is released."
+    }
+  ]
+}
