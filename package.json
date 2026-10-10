@@ -10,7 +10,8 @@
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "audit:sonatype": "node --env-file-if-exists=.env.local node_modules/auditjs/bin/index.js guide --dev --quiet"
+    "audit:sonatype": "node --env-file-if-exists=.env.local node_modules/auditjs/bin/index.js guide --dev --quiet",
+    "prepare": "husky"
   },
   "dependencies": {
     "next": "16.4.0",
@@ -26,6 +27,7 @@
     "auditjs": "^5.0.2",
     "eslint": "^9",
     "eslint-config-next": "16.4.0",
+    "husky": "^9.1.7",
     "typescript": "^5",
     "vitest": "^5.0.3"
   },

@@ -1,0 +1,7 @@
+# Refuse pushes that update the main branch. Other branches and tags pass.
+while read local_ref local_sha remote_ref remote_sha; do
+  if [ "$remote_ref" = "refs/heads/main" ]; then
+    echo "Direct pushes to main are blocked. Push a branch and open a pull request." >&2
+    exit 1
+  fi
+done
