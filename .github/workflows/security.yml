@@ -1,0 +1,54 @@
+name: Dependency security
+
+# Checks every installed package (including development tools) against
+# Sonatype Guide's vulnerability data. Sonatype charges credits per package
+# scanned, so this runs only when dependencies change, once a week to catch
+# newly published vulnerabilities, and on demand from the Actions tab.
+on:
+  push:
+    branches: [main]
+    paths: [package.json, package-lock.json, auditjs.json, .github/workflows/security.yml]
+  pull_request:
+    paths: [package.json, package-lock.json, auditjs.json, .github/workflows/security.yml]
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sonatype:
+    name: Sonatype vulnerability scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      AUDITJS_GUIDE_TOKEN: ${{ secrets.AUDITJS_GUIDE_TOKEN }}
+    steps:
+      # Pull requests from forks cannot read secrets; fail clearly instead of with an HTTP 401.
+      - name: Check that the Sonatype token is available
+        run: |
+          if [ -z "$AUDITJS_GUIDE_TOKEN" ]; then
+            echo "::error::The AUDITJS_GUIDE_TOKEN secret is not set. Add it under Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+
+      - name: Check out the code
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Fails the job when any installed package has a known vulnerability.
+      - name: Scan dependencies with Sonatype
+        run: npm run audit:sonatype

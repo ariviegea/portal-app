@@ -9,7 +9,8 @@
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "audit:sonatype": "node --env-file-if-exists=.env.local node_modules/auditjs/bin/index.js guide --dev --quiet"
   },
   "dependencies": {
     "next": "16.4.0",
@@ -22,6 +23,7 @@
     "@types/node": "^24.19.2",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "auditjs": "^5.0.2",
     "eslint": "^9",
     "eslint-config-next": "16.4.0",
     "typescript": "^5",

@@ -26,6 +26,7 @@ Then open http://localhost:3000/portal.
 | `npm run typecheck` | Generate Next.js route types, then check types with TypeScript |
 | `npm test` | Run the unit tests (Vitest) |
 | `npm run test:e2e` | Build the app and run the end-to-end tests (Playwright) |
+| `npm run audit:sonatype` | Check every installed package for known vulnerabilities (Sonatype) |
 
 The end-to-end tests need a browser. On CI they use Playwright's bundled Chromium (`npx playwright install chromium`). On a developer machine they use the installed Google Chrome.
 
@@ -72,5 +73,23 @@ Each API call gives up after 5 seconds, and the card for that API then shows "un
 ## Continuous integration
 
 `.github/workflows/ci.yml` runs on every push to `main` and on every pull request: lint, type check, unit tests, then a production build with the end-to-end tests. The Playwright report is kept for 7 days as a workflow artifact.
+
+## Dependency security
+
+`npm run audit:sonatype` runs Sonatype's `auditjs` against [Sonatype Guide](https://guide.sonatype.com), the service that replaced OSS Index. It checks every installed package, development tools included, and exits with an error when one has a known vulnerability.
+
+It needs a free API token:
+
+1. Create an account at https://guide.sonatype.com and make a token under Settings > API Tokens.
+2. Locally, put it in `.env.local` as `AUDITJS_GUIDE_TOKEN=...`.
+3. On GitHub, add it as a repository secret named `AUDITJS_GUIDE_TOKEN` (Settings > Secrets and variables > Actions).
+
+`.github/workflows/security.yml` runs the scan when `package.json` or `package-lock.json` changes, every Monday at 06:00 UTC, and on demand. Sonatype charges credits per package scanned, which is why it does not run on every push.
+
+To accept a finding you cannot fix yet, add an `auditjs.json` file at the project root:
+
+```json
+{ "ignore": [{ "id": "<vulnerability id from the report>", "reason": "Why this is acceptable for now" }] }
+```
 
 Deployment to Azure is not set up yet. The plan is in `docs/superpowers/plans/`.
