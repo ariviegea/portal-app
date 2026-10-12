@@ -22,6 +22,7 @@ Then open http://localhost:3000/portal.
 | Command | What it does |
 |---|---|
 | `npm run dev` | Start the development server |
+| `npm run dev:mock` | Start the development server with test data for the Azure traffic section |
 | `npm run build` | Build for production |
 | `npm run start` | Serve the production build |
 | `npm run lint` | Run ESLint |
@@ -42,7 +43,7 @@ src/
   controllers/   portalController.ts runs every model and turns failures into
                  "unavailable" results, so one broken API never breaks the page.
   views/         What the page looks like: PortalLayout, PortalView, RefreshButton.
-  components/    The component library (styled-components): button/, card/, theme.
+  components/    The component library (styled-components): button/, card/, toggle/, theme.
   app/           Next.js routes. A route only connects a controller to a view.
   lib/           Framework glue (styled-components server rendering).
   test-utils/    Helpers used only by unit tests.

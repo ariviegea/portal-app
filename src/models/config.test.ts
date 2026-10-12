@@ -7,6 +7,13 @@ describe("loadConfig", () => {
       npmApiUrl: "https://registry.npmjs.org",
       mavenApiUrl: "https://search.maven.org",
       githubApiUrl: "https://api.github.com",
+      azure: {
+        managementUrl: "https://management.azure.com",
+        identityEndpoint: undefined,
+        identityHeader: undefined,
+        productionResourceId: undefined,
+        stagingResourceId: undefined,
+      },
     });
   });
 
@@ -19,5 +26,23 @@ describe("loadConfig", () => {
 
   it("falls back to the default when a variable is empty", () => {
     expect(loadConfig({ MAVEN_API_URL: "" }).mavenApiUrl).toBe("https://search.maven.org");
+  });
+
+  it("reads the Azure settings", () => {
+    const config = loadConfig({
+      AZURE_MANAGEMENT_URL: "http://localhost:4010/azure/management/",
+      IDENTITY_ENDPOINT: "http://localhost:4010/azure/identity",
+      IDENTITY_HEADER: "header-value",
+      AZURE_PRODUCTION_RESOURCE_ID: " /subscriptions/s/resourceGroups/g/providers/Microsoft.Web/sites/prod ",
+      AZURE_STAGING_RESOURCE_ID: "",
+    });
+
+    expect(config.azure).toEqual({
+      managementUrl: "http://localhost:4010/azure/management",
+      identityEndpoint: "http://localhost:4010/azure/identity",
+      identityHeader: "header-value",
+      productionResourceId: "/subscriptions/s/resourceGroups/g/providers/Microsoft.Web/sites/prod",
+      stagingResourceId: undefined,
+    });
   });
 });
