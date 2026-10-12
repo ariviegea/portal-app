@@ -48,12 +48,71 @@ test.describe("portal page", () => {
   test("works at phone width", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
 
-    for (const id of ["source-npm", "source-maven", "source-github"]) {
+    for (const id of ["source-npm", "source-maven", "source-github", "azure-traffic"]) {
       await expect(page.getByTestId(id)).toBeVisible();
     }
     const overflows = await page.evaluate(
       () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
     );
     expect(overflows).toBe(false);
+  });
+});
+
+test.describe("Azure traffic", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto("/portal");
+  });
+
+  test("opens on Production with last hour's numbers", async ({ page }) => {
+    const traffic = page.getByTestId("azure-traffic");
+    await expect(traffic.getByRole("heading", { name: "Azure traffic" })).toBeVisible();
+    await expect(traffic.getByRole("button", { name: "Production" })).toHaveAttribute("aria-pressed", "true");
+    await expect(traffic.getByRole("button", { name: "Staging" })).toHaveAttribute("aria-pressed", "false");
+
+    await expect(traffic).toContainText("portal-prod");
+    await expect(page.getByTestId("azure-requests")).toContainText("120");
+    await expect(page.getByTestId("azure-server-errors")).toContainText("2");
+    await expect(page.getByTestId("azure-average-response")).toContainText("250 ms");
+  });
+
+  test("the toggle switches between Staging and Production", async ({ page }) => {
+    const traffic = page.getByTestId("azure-traffic");
+
+    await traffic.getByRole("button", { name: "Staging" }).click();
+
+    await expect(traffic.getByRole("button", { name: "Staging" })).toHaveAttribute("aria-pressed", "true");
+    await expect(traffic.getByRole("button", { name: "Production" })).toHaveAttribute("aria-pressed", "false");
+    await expect(traffic).toContainText("portal-staging");
+    await expect(traffic).not.toContainText("portal-prod");
+    await expect(page.getByTestId("azure-requests")).toContainText("8");
+    await expect(page.getByTestId("azure-average-response")).toContainText("100 ms");
+
+    await traffic.getByRole("button", { name: "Production" }).click();
+
+    await expect(traffic).toContainText("portal-prod");
+    await expect(page.getByTestId("azure-requests")).toContainText("120");
+  });
+
+  test("the toggle works with the keyboard", async ({ page }) => {
+    const staging = page.getByTestId("azure-traffic").getByRole("button", { name: "Staging" });
+
+    await staging.focus();
+    await page.keyboard.press("Enter");
+
+    await expect(staging).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByTestId("azure-requests")).toContainText("8");
+  });
+
+  test("the selection survives Refresh", async ({ page }) => {
+    const traffic = page.getByTestId("azure-traffic");
+    const npm = page.getByTestId("source-npm").filter({ visible: true });
+    await traffic.getByRole("button", { name: "Staging" }).click();
+    const before = await npm.innerText();
+
+    await page.getByRole("button", { name: "Refresh" }).click();
+
+    await expect(npm).not.toHaveText(before);
+    await expect(traffic.getByRole("button", { name: "Staging" })).toHaveAttribute("aria-pressed", "true");
+    await expect(traffic).toContainText("portal-staging");
   });
 });

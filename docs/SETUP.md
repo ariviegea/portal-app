@@ -28,8 +28,8 @@ portal-app/
     app/            Next.js routes: /, /portal, and the root layout
     models/         One file per API, plus shared fetch, config and types
     controllers/    portalController.ts: runs all models, handles failures
-    views/portal/   Page layout, card grid, Refresh button
-    components/     Component library (styled-components): button/, card/, theme
+    views/portal/   Page layout, card grid, Azure traffic section, Refresh button
+    components/     Component library (styled-components): button/, card/, toggle/, theme
     lib/            Glue so styled-components works with server rendering
     test-utils/     Helper used only by unit tests (a real local HTTP server)
   test/             Playwright end-to-end tests and the mock API they use
@@ -62,8 +62,8 @@ There are 13 packages. The first four ship with the running app. The other nine 
 | `@types/react-dom` | 19.3.0 | Type definitions for `react-dom`. Needed by Next.js's TypeScript setup. |
 | `eslint` | 9.39.5 | Linter. `npm run lint` checks the code for likely mistakes and inconsistent patterns. Configured in `eslint.config.mjs`. |
 | `eslint-config-next` | 16.4.0 | The rule set ESLint applies: Next.js's recommended rules, including React, accessibility, performance ("core web vitals") and TypeScript rules. Its version matches `next`. |
-| `vitest` | 5.0.3 | Unit test runner. `npm test` runs the `*.test.ts` files next to the models and the controller (18 tests). Configured in `vitest.config.mts`. |
-| `@playwright/test` | 1.64.0 | End-to-end test runner. `npm run test:e2e` builds the app, starts it together with a mock API, and drives a real browser through the tests in `test/` (6 tests). Configured in `playwright.config.ts`. |
+| `vitest` | 5.0.3 | Unit test runner. `npm test` runs the `*.test.ts` files next to the models and the controller (42 tests). Configured in `vitest.config.mts`. |
+| `@playwright/test` | 1.64.0 | End-to-end test runner. `npm run test:e2e` builds the app, starts it together with a mock API, and drives a real browser through the tests in `test/` (10 tests). Configured in `playwright.config.ts`. |
 | `auditjs` | 5.0.2 | Sonatype's vulnerability scanner. `npm run audit:sonatype` checks every installed package against Sonatype Guide and fails if one has a known vulnerability. |
 
 These 13 packages bring in several hundred others that they depend on themselves. Those are listed in `package-lock.json` and are also covered by the Sonatype scan.
@@ -73,6 +73,7 @@ These 13 packages bring in several hundred others that they depend on themselves
 | Command | What runs | When to use it |
 |---|---|---|
 | `npm run dev` | `next dev` | While developing. Opens the app at http://localhost:3000 and reloads on changes. |
+| `npm run dev:mock` | `node test/dev-with-mock.mjs` | To see the Azure traffic section on your own computer. Same as `dev`, plus a stand-in for Azure that serves made-up numbers. |
 | `npm run build` | `next build` | Creates the production build in `.next/`. |
 | `npm run start` | `next start` | Serves the production build. Run `build` first. |
 | `npm run lint` | `eslint` | Before committing. |
@@ -107,15 +108,43 @@ All are optional except the Sonatype token, which is only needed for the scan.
 | `NPM_API_URL` | npm model | `https://registry.npmjs.org` |
 | `MAVEN_API_URL` | Maven model | `https://search.maven.org` |
 | `GITHUB_API_URL` | GitHub model | `https://api.github.com` |
+| `AZURE_PRODUCTION_RESOURCE_ID` | Azure metrics model | none; Production is left out of the Azure traffic section |
+| `AZURE_STAGING_RESOURCE_ID` | Azure metrics model | none; Staging is left out of the Azure traffic section |
+| `AZURE_MANAGEMENT_URL` | Azure metrics model | `https://management.azure.com` |
+| `IDENTITY_ENDPOINT`, `IDENTITY_HEADER` | Azure identity model | set by Azure itself; never set these by hand |
 | `AUDITJS_GUIDE_TOKEN` | `npm run audit:sonatype` | none |
 
 Put real values in `.env.local`. Next.js loads it automatically. Never start a secret's name with `NEXT_PUBLIC_`: Next.js sends those values to the browser.
+
+## Azure traffic section
+
+On Azure, the portal shows an "Azure traffic" section below the API cards. A toggle switches between Production and Staging, and three tiles show the selected web app's last hour: requests, server errors and average response time. The numbers come from Azure Monitor, which records them for every web app.
+
+How it works:
+
+1. Each web app has a **managed identity** (web app > Settings > Identity > System assigned). Azure gives the running app a short-lived token for that identity on request, so no key or password is stored anywhere. `src/models/azureResources/azureIdentityModel.ts` fetches the token and keeps it in memory until shortly before it expires.
+2. Both identities have the read-only **Monitoring Reader** role on both web apps (web app > Access control (IAM)).
+3. `src/models/azureResources/azureMetricsModel.ts` asks Azure Monitor for the `Requests`, `Http5xx` and `HttpResponseTime` metrics of the web app named by the resource ID, minute by minute for the last hour, and adds them up. The average response time is weighted by each minute's requests.
+4. The controller loads both environments together with the API cards and returns them separately (`sources` and `environments`).
+5. `src/views/portal/EnvironmentPanel.tsx` draws the section, using the `Toggle` and `Card` components. Both environments are already on the page, so switching needs no new request. The Refresh button reloads both and keeps the selection.
+6. The two resource IDs are set on each web app under Settings > Environment variables.
+
+An environment is left out when the app has no managed identity or its resource ID is not set. That is the case on a developer machine, so the section appears only on Azure. An environment that is configured but fails (for example, a missing role) shows "unavailable". The section carries no links, so the subscription ID never appears in the page.
+
+## Guards against leaking secrets
+
+Real keys and IDs live only in `.env.local` (ignored by git), in GitHub's secrets and in Azure's settings. Two guards back that up:
+
+- **Before each commit**, the hook in `.husky/pre-commit` runs `scripts/check-staged-secrets.mjs`. It stops the commit if an env file other than `.env.example` is staged, or if a staged file contains a value from `.env.local` (or an ID inside one, such as the subscription ID in a resource ID). It reads the values on your computer at that moment and names only the variable, never the value. It guards this computer only, and `git commit --no-verify` skips it.
+- **In every unit test**, `src/test-utils/blockExternalRequests.ts` makes a request to anything other than this computer fail. Tests use local stand-in servers, so a test can never send a real token to a real service.
+
+The values written in the test files (`sub-1`, `test-azure-token` and the like) are made up and unlock nothing.
 
 ## Testing
 
 **Unit tests** (`src/**/*.test.ts`, Vitest) cover the models, the configuration loader and the controller. They do not mock `fetch`. Each test starts a small real HTTP server (`src/test-utils/httpServer.ts`) and points the code at it, so timeouts, error statuses and malformed answers are tested for real.
 
-**End-to-end tests** (`test/portal.spec.ts`, Playwright) cover the page as a visitor sees it: the redirect from `/`, the heading, data from each API, the "unavailable" message, the Refresh button, and the phone-width layout. They run against `test/mock-api.mjs`, a local stand-in for the three APIs, so the tests give the same result with or without internet. The mock deliberately makes the GitHub API fail, to test the "unavailable" card.
+**End-to-end tests** (`test/portal.spec.ts`, Playwright) cover the page as a visitor sees it: the redirect from `/`, the heading, data from each API, the "unavailable" message, the Azure traffic toggle, the Refresh button, and the phone-width layout. They run against `test/mock-api.mjs`, a local stand-in for the three APIs and for Azure's identity and metrics endpoints, so the tests give the same result with or without internet. The mock deliberately makes the GitHub API fail, to test the "unavailable" card.
 
 On a developer machine Playwright uses the installed Google Chrome. On GitHub it uses Playwright's own Chromium.
 
