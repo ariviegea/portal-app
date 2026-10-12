@@ -1,6 +1,6 @@
-import { fetchJson } from "./fetchJson";
-import { isRecord } from "./isRecord";
-import type { PortalItem } from "./types";
+import { fetchJson } from "../data/fetchJson";
+import { isRecord } from "../isRecord";
+import type { PortalItem } from "../azureResources/types";
 
 /** Latest version of an artifact on Maven Central. */
 export async function getMavenArtifact(baseUrl: string, group: string, artifact: string): Promise<PortalItem> {

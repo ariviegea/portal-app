@@ -16,6 +16,17 @@ describe("fetchJson", () => {
     await expect(fetchJson(server.url)).resolves.toEqual({ ok: true });
   });
 
+  it("sends extra request headers", async () => {
+    server = await startServer((req, res) =>
+      sendJson(res, { authorization: req.headers.authorization, accept: req.headers.accept }),
+    );
+
+    await expect(fetchJson(server.url, { headers: { Authorization: "Bearer abc" } })).resolves.toEqual({
+      authorization: "Bearer abc",
+      accept: "application/json",
+    });
+  });
+
   it("rejects on a non-2xx status", async () => {
     server = await startServer((_req, res) => sendJson(res, { error: "down" }, 503));
 

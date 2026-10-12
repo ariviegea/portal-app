@@ -1,14 +1,9 @@
-import { loadConfig } from "@/models/config";
-import { getGithubRepo } from "@/models/githubRepoModel";
-import { getMavenArtifact } from "@/models/mavenArtifactModel";
-import { getNpmPackage } from "@/models/npmPackageModel";
-import type { PortalConfig, PortalItem, SourceId, SourceResult } from "@/models/types";
-
-type Source = {
-  id: SourceId;
-  label: string;
-  load(config: PortalConfig): Promise<PortalItem>;
-};
+import { loadConfig } from "@/models/data/config";
+import { getGithubRepo } from "@/models/github/githubRepoModel";
+import { getMavenArtifact } from "@/models/maven/mavenArtifactModel";
+import { getNpmPackage } from "@/models/npmPackage/npmPackageModel";
+import type { PortalConfig, PortalData } from "@/models/azureResources/types";
+import { loadEnvironment, loadSource, type Environment, type Source } from "./utils/loaders";
 
 // To show another API on the portal, add its model and one entry here.
 const sources: Source[] = [
@@ -29,19 +24,33 @@ const sources: Source[] = [
   },
 ];
 
-/**
- * Loads every source at once. Never rejects: a source that fails becomes an
- * "error" result so the others can still be shown.
- */
-export async function getPortalData(config: PortalConfig = loadConfig()): Promise<SourceResult[]> {
-  const settled = await Promise.allSettled(sources.map((source) => source.load(config)));
+// The Azure web apps whose traffic the portal can show, in the order of the toggle.
+const environments: Environment[] = [
+  { id: "production", label: "Production", resourceId: (azure) => azure.productionResourceId },
+  { id: "staging", label: "Staging", resourceId: (azure) => azure.stagingResourceId },
+];
 
-  return sources.map(({ id, label }, index): SourceResult => {
-    const outcome = settled[index];
-    if (outcome?.status === "fulfilled") {
-      return { id, label, status: "ok", item: outcome.value };
-    }
-    console.error(`[portal] ${label} failed:`, outcome?.reason);
-    return { id, label, status: "error", message: `${label} is unavailable right now.` };
+/**
+ * Loads every source and every Azure environment at once. Never rejects: one
+ * that fails becomes an "error" result so the others can still be shown.
+ *
+ * An environment is left out, rather than shown as failed, where the app has
+ * no managed identity or the environment's resource ID is not set. That is
+ * the case everywhere except on Azure.
+ */
+export async function getPortalData(config: PortalConfig = loadConfig()): Promise<PortalData> {
+  const { azure } = config;
+  const hasIdentity = Boolean(azure.identityEndpoint && azure.identityHeader);
+
+  const environmentLoads = environments.flatMap((environment) => {
+    const resourceId = environment.resourceId(azure);
+    return hasIdentity && resourceId ? [loadEnvironment(environment, azure, resourceId)] : [];
   });
+
+  const [sourceResults, environmentResults] = await Promise.all([
+    Promise.all(sources.map((source) => loadSource(source, config))),
+    Promise.all(environmentLoads),
+  ]);
+
+  return { sources: sourceResults, environments: environmentResults };
 }

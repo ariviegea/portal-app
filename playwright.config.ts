@@ -1,8 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
+import { MOCK_API_URL as mockApi, mockAzureEnv } from "./test/mock-settings.mjs";
 
 const APP_PORT = 3100;
-const MOCK_API_PORT = 4010;
-const mockApi = `http://localhost:${MOCK_API_PORT}`;
 const isCI = !!process.env.CI;
 
 export default defineConfig({
@@ -42,6 +41,7 @@ export default defineConfig({
         NPM_API_URL: `${mockApi}/npm`,
         MAVEN_API_URL: `${mockApi}/maven`,
         GITHUB_API_URL: `${mockApi}/github`,
+        ...mockAzureEnv,
       },
     },
   ],

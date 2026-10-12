@@ -4,13 +4,16 @@ const DEFAULT_TIMEOUT_MS = 5000;
  * GETs a URL and returns its JSON body. Rejects on a non-2xx status,
  * a body that is not JSON, or no answer within the timeout.
  */
-export async function fetchJson(url: string, options: { timeoutMs?: number } = {}): Promise<unknown> {
+export async function fetchJson(
+  url: string,
+  options: { timeoutMs?: number; headers?: Record<string, string> } = {},
+): Promise<unknown> {
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
 
   let response: Response;
   try {
     response = await fetch(url, {
-      headers: { Accept: "application/json" },
+      headers: { Accept: "application/json", ...options.headers },
       signal: AbortSignal.timeout(timeoutMs),
     });
   } catch (error) {

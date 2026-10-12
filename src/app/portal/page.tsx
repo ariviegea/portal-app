@@ -8,8 +8,8 @@ import { PortalLoading, PortalView } from "@/views/portal/PortalView";
 async function PortalResults() {
   // The APIs are called for each visit, never while the page shell is prebuilt.
   await connection();
-  const results = await getPortalData();
-  return <PortalView results={results} />;
+  const { sources, environments } = await getPortalData();
+  return <PortalView sources={sources} environments={environments} />;
 }
 
 export default function PortalPage() {
