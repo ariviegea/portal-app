@@ -1,8 +1,14 @@
 const DEFAULT_TIMEOUT_MS = 5000;
 
+// How much of a refusal's explanation is kept for the server log.
+const MAX_DETAIL_LENGTH = 500;
+
 /**
  * GETs a URL and returns its JSON body. Rejects on a non-2xx status,
  * a body that is not JSON, or no answer within the timeout.
+ *
+ * On a non-2xx status, the start of the body (where services say why they
+ * refused) is attached to the error as its `cause`, so it shows in the log.
  */
 export async function fetchJson(
   url: string,
@@ -24,7 +30,9 @@ export async function fetchJson(
   }
 
   if (!response.ok) {
-    throw new Error(`Request failed with status ${response.status}`);
+    const body = await response.text().catch(() => "");
+    const detail = body.replace(/\s+/g, " ").trim().slice(0, MAX_DETAIL_LENGTH);
+    throw new Error(`Request failed with status ${response.status}`, detail ? { cause: detail } : undefined);
   }
 
   try {
