@@ -25,15 +25,36 @@ function metric(name: string, data: Point[] | null) {
   return { name: { value: name }, timeseries: data ? [{ data }] : [] };
 }
 
-/** Stands in for both the identity endpoint and Azure Monitor. */
+// Which aggregation each metric offers. Azure Monitor refuses a request (400)
+// that asks any metric for one it does not offer; staging showed this on 2026-10-12.
+const OFFERED: Record<string, string> = { Requests: "total", Http5xx: "total", HttpResponseTime: "average" };
+
+/**
+ * Stands in for both the identity endpoint and Azure Monitor. Like Azure
+ * Monitor, it answers only with the metrics that were asked for, and refuses
+ * a request that asks a metric for an aggregation it does not offer.
+ */
 function azure(metricsBody: unknown, metricsStatus = 200, seen: http.IncomingMessage[] = []): http.RequestListener {
   return (req, res) => {
     if (req.url?.startsWith("/identity")) {
       sendJson(res, tokenAnswer());
-    } else {
-      seen.push(req);
-      sendJson(res, metricsBody, metricsStatus);
+      return;
     }
+    seen.push(req);
+
+    const query = new URL(req.url ?? "", "http://test").searchParams;
+    const names = (query.get("metricnames") ?? "").split(",");
+    const aggregations = (query.get("aggregation") ?? "").split(",");
+    if (names.some((name) => aggregations.some((aggregation) => aggregation !== OFFERED[name]))) {
+      sendJson(res, { code: "BadRequest", message: "Requested aggregation is not supported by the metric" }, 400);
+      return;
+    }
+
+    const all = metricsBody as { value?: { name: { value: string } }[] };
+    const body = Array.isArray(all.value)
+      ? { value: all.value.filter((entry) => names.includes(entry.name.value)) }
+      : metricsBody;
+    sendJson(res, body, metricsStatus);
   };
 }
 
@@ -73,16 +94,20 @@ describe("getAppMetrics", () => {
       averageResponseMs: 250,
     });
 
-    expect(seen).toHaveLength(1);
-    const url = new URL(seen[0]?.url ?? "", server.url);
-    expect(url.pathname).toBe(`/management${RESOURCE_ID}/providers/Microsoft.Insights/metrics`);
-    expect(url.searchParams.get("api-version")).toBe("2023-10-01");
-    expect(url.searchParams.get("metricnames")).toBe("Requests,Http5xx,HttpResponseTime");
-    expect(url.searchParams.get("aggregation")).toBe("total,average");
-    expect(url.searchParams.get("interval")).toBe("PT1M");
-    const [start, end] = (url.searchParams.get("timespan") ?? "").split("/");
-    expect(Date.parse(end ?? "") - Date.parse(start ?? "")).toBe(60 * 60 * 1000);
-    expect(seen[0]?.headers.authorization).toBe("Bearer token-1");
+    // Counts and timings are asked for separately, each with the aggregation its metrics offer.
+    const requests = seen.map((request) => new URL(request.url ?? "", server?.url));
+    expect(requests.map((url) => [url.searchParams.get("metricnames"), url.searchParams.get("aggregation")]).sort()).toEqual([
+      ["HttpResponseTime", "average"],
+      ["Requests,Http5xx", "total"],
+    ]);
+    for (const [index, url] of requests.entries()) {
+      expect(url.pathname).toBe(`/management${RESOURCE_ID}/providers/Microsoft.Insights/metrics`);
+      expect(url.searchParams.get("api-version")).toBe("2023-10-01");
+      expect(url.searchParams.get("interval")).toBe("PT1M");
+      const [start, end] = (url.searchParams.get("timespan") ?? "").split("/");
+      expect(Date.parse(end ?? "") - Date.parse(start ?? "")).toBe(60 * 60 * 1000);
+      expect(seen[index]?.headers.authorization).toBe("Bearer token-1");
+    }
   });
 
   it("reports an hour without traffic", async () => {

@@ -50,16 +50,25 @@ function averageResponseMs(requestsPerMinute: Series, responseSecondsPerMinute: 
   return weightedRequests > 0 ? Math.round((weightedSeconds / weightedRequests) * 1000) : null;
 }
 
-/** Asks Azure Monitor for the web app's last hour, one value per minute. Returns the list of metrics. */
-async function fetchLastHour(azure: AzureConfig, resourceId: string): Promise<unknown[]> {
-  const token = await getManagementToken(azure);
-
+/**
+ * Asks Azure Monitor for some of the web app's metrics over the last hour, one
+ * value per minute. Azure refuses the whole request if any of the metrics
+ * does not offer the aggregation asked for, so metrics that are counted
+ * ("total") and metrics that are averaged are fetched separately.
+ */
+async function fetchLastHour(
+  azure: AzureConfig,
+  resourceId: string,
+  token: string,
+  metricNames: string[],
+  aggregation: "total" | "average",
+): Promise<unknown[]> {
   const end = new Date();
   const start = new Date(end.getTime() - HOUR_MS);
   const query = new URLSearchParams({
     "api-version": "2023-10-01",
-    metricnames: "Requests,Http5xx,HttpResponseTime",
-    aggregation: "total,average",
+    metricnames: metricNames.join(","),
+    aggregation,
     interval: "PT1M",
     timespan: `${start.toISOString()}/${end.toISOString()}`,
   });
@@ -83,10 +92,14 @@ export async function getAppMetrics(azure: AzureConfig, resourceId: string): Pro
     throw new Error("Invalid Azure resource ID");
   }
 
-  const metrics = await fetchLastHour(azure, resourceId);
-  const requestsPerMinute = readSeries(metrics, "Requests", "total");
-  const errorsPerMinute = readSeries(metrics, "Http5xx", "total");
-  const responseSecondsPerMinute = readSeries(metrics, "HttpResponseTime", "average");
+  const token = await getManagementToken(azure);
+  const [counts, timings] = await Promise.all([
+    fetchLastHour(azure, resourceId, token, ["Requests", "Http5xx"], "total"),
+    fetchLastHour(azure, resourceId, token, ["HttpResponseTime"], "average"),
+  ]);
+  const requestsPerMinute = readSeries(counts, "Requests", "total");
+  const errorsPerMinute = readSeries(counts, "Http5xx", "total");
+  const responseSecondsPerMinute = readSeries(timings, "HttpResponseTime", "average");
 
   return {
     appName: resourceId.slice(resourceId.lastIndexOf("/") + 1),

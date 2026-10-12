@@ -33,6 +33,18 @@ describe("fetchJson", () => {
     await expect(fetchJson(server.url)).rejects.toThrow("Request failed with status 503");
   });
 
+  it("keeps the service's explanation of a refusal, for the server log", async () => {
+    server = await startServer((_req, res) =>
+      sendJson(res, { error: { code: "BadRequest", message: "Aggregation not supported" } }, 400),
+    );
+
+    const failure = await fetchJson(server.url).catch((error: unknown) => error);
+
+    expect(failure).toBeInstanceOf(Error);
+    expect((failure as Error).message).toBe("Request failed with status 400");
+    expect((failure as Error).cause).toBe('{"error":{"code":"BadRequest","message":"Aggregation not supported"}}');
+  });
+
   it("rejects when the body is not JSON", async () => {
     server = await startServer((_req, res) => {
       res.writeHead(200, { "Content-Type": "text/html" });
