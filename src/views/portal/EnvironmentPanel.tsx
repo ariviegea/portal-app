@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import styled from "styled-components";
-import { Card } from "@/components/card";
+import { Card, UnavailableCard } from "@/components/card";
 import { theme } from "@/components/theme";
 import { Toggle } from "@/components/toggle";
-import type { EnvironmentId, EnvironmentResult } from "@/models/types";
+import type { AppMetrics, EnvironmentId, EnvironmentResult } from "@/models/azureResources/types";
 
 const Section = styled.section`
   display: flex;
@@ -39,6 +39,29 @@ const Grid = styled.div`
   gap: ${theme.space.md};
 `;
 
+/** The three numbers for one environment, one card each. */
+function TrafficTiles({ metrics }: { metrics: AppMetrics }) {
+  const hasTraffic = metrics.averageResponseMs !== null;
+
+  return (
+    <Grid>
+      <Card data-testid="azure-requests" label="Requests" title={String(metrics.requests)} detail="in the last hour" />
+      <Card
+        data-testid="azure-server-errors"
+        label="Server errors"
+        title={String(metrics.serverErrors)}
+        detail="responses with a 5xx status"
+      />
+      <Card
+        data-testid="azure-average-response"
+        label="Average response"
+        title={hasTraffic ? `${metrics.averageResponseMs} ms` : "–"}
+        detail={hasTraffic ? "per request" : "no requests to measure"}
+      />
+    </Grid>
+  );
+}
+
 /**
  * Last hour's traffic for one Azure environment at a time, with a toggle to
  * switch between them. All environments arrive together, so switching needs
@@ -67,35 +90,10 @@ export function EnvironmentPanel({ environments }: { environments: EnvironmentRe
           <Caption>
             {selected.label} · {selected.metrics.appName} · last hour
           </Caption>
-          <Grid>
-            <Card
-              data-testid="azure-requests"
-              label="Requests"
-              title={String(selected.metrics.requests)}
-              detail="in the last hour"
-            />
-            <Card
-              data-testid="azure-server-errors"
-              label="Server errors"
-              title={String(selected.metrics.serverErrors)}
-              detail="responses with a 5xx status"
-            />
-            <Card
-              data-testid="azure-average-response"
-              label="Average response"
-              title={selected.metrics.averageResponseMs === null ? "–" : `${selected.metrics.averageResponseMs} ms`}
-              detail={selected.metrics.averageResponseMs === null ? "no requests to measure" : "per request"}
-            />
-          </Grid>
+          <TrafficTiles metrics={selected.metrics} />
         </>
       ) : (
-        <Card
-          data-testid="azure-unavailable"
-          label={selected.label}
-          title="Unavailable"
-          detail={selected.message}
-          tone="error"
-        />
+        <UnavailableCard data-testid="azure-unavailable" label={selected.label} message={selected.message} />
       )}
     </Section>
   );

@@ -1,4 +1,4 @@
-import type { PortalConfig } from "./types";
+import type { PortalConfig } from "../azureResources/types";
 
 type Env = Record<string, string | undefined>;
 

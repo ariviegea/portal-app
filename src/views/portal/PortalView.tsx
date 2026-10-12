@@ -1,9 +1,9 @@
 "use client";
 
 import styled from "styled-components";
-import { Card } from "@/components/card";
+import { Card, UnavailableCard } from "@/components/card";
 import { theme } from "@/components/theme";
-import type { EnvironmentResult, SourceResult } from "@/models/types";
+import type { EnvironmentResult, SourceResult } from "@/models/azureResources/types";
 import { EnvironmentPanel } from "./EnvironmentPanel";
 
 const Stack = styled.div`
@@ -42,13 +42,11 @@ export function PortalView({ sources, environments }: { sources: SourceResult[];
               href={result.item.href}
             />
           ) : (
-            <Card
+            <UnavailableCard
               key={result.id}
               data-testid={`source-${result.id}`}
               label={result.label}
-              title="Unavailable"
-              detail={result.message}
-              tone="error"
+              message={result.message}
             />
           ),
         )}

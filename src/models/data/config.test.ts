@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { loadConfig } from "./config";
+import { loadConfig } from "./data/config";
 
 describe("loadConfig", () => {
   it("uses the public API addresses when nothing is set", () => {

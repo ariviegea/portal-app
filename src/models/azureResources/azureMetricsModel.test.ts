@@ -1,9 +1,9 @@
 import type http from "node:http";
 import { afterEach, describe, expect, it } from "vitest";
+import { azureConfigFor, tokenAnswer } from "@/test-utils/azure";
 import { sendJson, startServer, type TestServer } from "@/test-utils/httpServer";
 import { clearTokenCache } from "./azureIdentityModel";
 import { getAppMetrics } from "./azureMetricsModel";
-import type { AzureConfig } from "../types";
 
 const RESOURCE_ID = "/subscriptions/sub-1/resourceGroups/rg-1/providers/Microsoft.Web/sites/my-app";
 
@@ -15,14 +15,8 @@ afterEach(async () => {
   clearTokenCache();
 });
 
-function azureFor(baseUrl: string): AzureConfig {
-  return {
-    managementUrl: `${baseUrl}/management`,
-    identityEndpoint: `${baseUrl}/identity`,
-    identityHeader: "identity-secret",
-    productionResourceId: RESOURCE_ID,
-    stagingResourceId: undefined,
-  };
+function azureFor(baseUrl: string) {
+  return azureConfigFor(baseUrl, { productionResourceId: RESOURCE_ID });
 }
 
 type Point = { timeStamp: string; total?: number; average?: number };
@@ -35,7 +29,7 @@ function metric(name: string, data: Point[] | null) {
 function azure(metricsBody: unknown, metricsStatus = 200, seen: http.IncomingMessage[] = []): http.RequestListener {
   return (req, res) => {
     if (req.url?.startsWith("/identity")) {
-      sendJson(res, { access_token: "token-1", expires_on: String(Math.floor(Date.now() / 1000) + 3600) });
+      sendJson(res, tokenAnswer());
     } else {
       seen.push(req);
       sendJson(res, metricsBody, metricsStatus);

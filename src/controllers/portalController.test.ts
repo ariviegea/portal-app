@@ -1,7 +1,8 @@
 import type http from "node:http";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { PortalConfig } from "@/models/types";
+import type { PortalConfig } from "@/models/azureResources/types";
 import { clearTokenCache } from "@/models/azureResources/azureIdentityModel";
+import { azureConfigFor, tokenAnswer } from "@/test-utils/azure";
 import { sendJson, startServer, type TestServer } from "@/test-utils/httpServer";
 import { getPortalData } from "./portalController";
 
@@ -22,27 +23,15 @@ function configFor(baseUrl: string): PortalConfig {
     npmApiUrl: `${baseUrl}/npm`,
     mavenApiUrl: `${baseUrl}/maven`,
     githubApiUrl: `${baseUrl}/github`,
-    // No managed identity and no resource IDs: the Azure sources are left out.
-    azure: {
-      managementUrl: `${baseUrl}/management`,
-      identityEndpoint: undefined,
-      identityHeader: undefined,
-      productionResourceId: undefined,
-      stagingResourceId: undefined,
-    },
+    // No managed identity: the Azure environments are left out.
+    azure: azureConfigFor(baseUrl, { identityEndpoint: undefined, identityHeader: undefined }),
   };
 }
 
 function configWithAzure(baseUrl: string): PortalConfig {
   return {
     ...configFor(baseUrl),
-    azure: {
-      managementUrl: `${baseUrl}/management`,
-      identityEndpoint: `${baseUrl}/identity`,
-      identityHeader: "identity-secret",
-      productionResourceId: PRODUCTION_ID,
-      stagingResourceId: STAGING_ID,
-    },
+    azure: azureConfigFor(baseUrl, { productionResourceId: PRODUCTION_ID, stagingResourceId: STAGING_ID }),
   };
 }
 
@@ -68,7 +57,7 @@ function threeApis(options: { githubStatus?: number } = {}): http.RequestListene
         options.githubStatus ?? 200,
       );
     } else if (path.startsWith("/identity")) {
-      sendJson(res, { access_token: "token-1", expires_on: String(Math.floor(Date.now() / 1000) + 3600) });
+      sendJson(res, tokenAnswer());
     } else if (path.startsWith(`/management${PRODUCTION_ID}/`)) {
       sendJson(res, {
         value: [

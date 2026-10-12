@@ -1,6 +1,6 @@
-import { fetchJson } from "../fetchJson";
+import { fetchJson } from "../data/fetchJson";
 import { isRecord } from "../isRecord";
-import type { AzureConfig } from "../types";
+import type { AzureConfig } from "./types";
 
 // The audience Azure Resource Manager (which serves Azure Monitor) expects in a token.
 const MANAGEMENT_RESOURCE = "https://management.azure.com/";

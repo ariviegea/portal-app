@@ -1,30 +1,9 @@
-import { getAppMetrics } from "@/models/azureResources/azureMetricsModel";
-import { loadConfig } from "@/models/config";
-import { getGithubRepo } from "@/models/githubRepoModel";
-import { getMavenArtifact } from "@/models/mavenArtifactModel";
-import { getNpmPackage } from "@/models/npmPackageModel";
-import type {
-  AzureConfig,
-  EnvironmentId,
-  EnvironmentResult,
-  PortalConfig,
-  PortalData,
-  PortalItem,
-  SourceId,
-  SourceResult,
-} from "@/models/types";
-
-type Source = {
-  id: SourceId;
-  label: string;
-  load(config: PortalConfig): Promise<PortalItem>;
-};
-
-type Environment = {
-  id: EnvironmentId;
-  label: string;
-  resourceId(azure: AzureConfig): string | undefined;
-};
+import { loadConfig } from "@/models/data/config";
+import { getGithubRepo } from "@/models/github/githubRepoModel";
+import { getMavenArtifact } from "@/models/maven/mavenArtifactModel";
+import { getNpmPackage } from "@/models/npmPackage/npmPackageModel";
+import type { PortalConfig, PortalData } from "@/models/azureResources/types";
+import { loadEnvironment, loadSource, type Environment, type Source } from "./utils/loaders";
 
 // To show another API on the portal, add its model and one entry here.
 const sources: Source[] = [
@@ -62,32 +41,16 @@ const environments: Environment[] = [
 export async function getPortalData(config: PortalConfig = loadConfig()): Promise<PortalData> {
   const { azure } = config;
   const hasIdentity = Boolean(azure.identityEndpoint && azure.identityHeader);
-  const configured = environments.flatMap((environment) => {
+
+  const environmentLoads = environments.flatMap((environment) => {
     const resourceId = environment.resourceId(azure);
-    return hasIdentity && resourceId ? [{ ...environment, resourceId }] : [];
+    return hasIdentity && resourceId ? [loadEnvironment(environment, azure, resourceId)] : [];
   });
 
-  const [sourceOutcomes, environmentOutcomes] = await Promise.all([
-    Promise.allSettled(sources.map((source) => source.load(config))),
-    Promise.allSettled(configured.map((environment) => getAppMetrics(azure, environment.resourceId))),
+  const [sourceResults, environmentResults] = await Promise.all([
+    Promise.all(sources.map((source) => loadSource(source, config))),
+    Promise.all(environmentLoads),
   ]);
 
-  return {
-    sources: sources.map(({ id, label }, index): SourceResult => {
-      const outcome = sourceOutcomes[index];
-      if (outcome?.status === "fulfilled") {
-        return { id, label, status: "ok", item: outcome.value };
-      }
-      console.error(`[portal] ${label} failed:`, outcome?.reason);
-      return { id, label, status: "error", message: `${label} is unavailable right now.` };
-    }),
-    environments: configured.map(({ id, label }, index): EnvironmentResult => {
-      const outcome = environmentOutcomes[index];
-      if (outcome?.status === "fulfilled") {
-        return { id, label, status: "ok", metrics: outcome.value };
-      }
-      console.error(`[portal] ${label} traffic failed:`, outcome?.reason);
-      return { id, label, status: "error", message: `${label} traffic is unavailable right now.` };
-    }),
-  };
+  return { sources: sourceResults, environments: environmentResults };
 }

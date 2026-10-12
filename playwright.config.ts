@@ -1,11 +1,8 @@
 import { defineConfig, devices } from "@playwright/test";
+import { MOCK_API_URL as mockApi, mockAzureEnv } from "./test/mock-settings.mjs";
 
 const APP_PORT = 3100;
-const MOCK_API_PORT = 4010;
-const mockApi = `http://localhost:${MOCK_API_PORT}`;
 const isCI = !!process.env.CI;
-const azureResource = (site: string) =>
-  `/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/test/providers/Microsoft.Web/sites/${site}`;
 
 export default defineConfig({
   testDir: "./test",
@@ -44,12 +41,7 @@ export default defineConfig({
         NPM_API_URL: `${mockApi}/npm`,
         MAVEN_API_URL: `${mockApi}/maven`,
         GITHUB_API_URL: `${mockApi}/github`,
-        // Stand-ins for what Azure provides to a web app with a managed identity.
-        AZURE_MANAGEMENT_URL: `${mockApi}/azure/management`,
-        IDENTITY_ENDPOINT: `${mockApi}/azure/identity`,
-        IDENTITY_HEADER: "test-identity-header",
-        AZURE_PRODUCTION_RESOURCE_ID: azureResource("portal-prod"),
-        AZURE_STAGING_RESOURCE_ID: azureResource("portal-staging"),
+        ...mockAzureEnv,
       },
     },
   ],

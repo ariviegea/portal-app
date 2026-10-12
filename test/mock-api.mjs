@@ -1,11 +1,8 @@
 // Local stand-in for the external APIs (and Azure), used only by the Playwright tests.
 // playwright.config.ts starts it and points the app's *_API_URL variables here.
 import http from "node:http";
+import { AZURE_TOKEN, IDENTITY_HEADER, MOCK_API_PORT as PORT } from "./mock-settings.mjs";
 
-const PORT = 4010;
-// Must match the values in playwright.config.ts.
-const IDENTITY_HEADER = "test-identity-header";
-const AZURE_TOKEN = "test-azure-token";
 let npmRequests = 0;
 
 function azureMetric(name, field, value) {
