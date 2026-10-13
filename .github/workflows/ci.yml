@@ -122,6 +122,10 @@ jobs:
         with:
           app-name: ${{ vars.AZURE_WEBAPP_NAME }}
           package: portal-app.zip
+          # Empties the app's folder first. Otherwise files from earlier deployments
+          # stay behind and old scripts get mixed into the new app.
+          type: zip
+          clean: true
 
   deploy-production:
     name: Deploy to production
@@ -151,6 +155,10 @@ jobs:
         with:
           app-name: ${{ vars.AZURE_WEBAPP_NAME }}
           package: portal-app.zip
+          # Empties the app's folder first. Otherwise files from earlier deployments
+          # stay behind and old scripts get mixed into the new app.
+          type: zip
+          clean: true
 
       # Records the release: the highest vX.Y.Z tag plus one, e.g. v0.1.1 -> v0.1.2.
       - name: Tag the release
