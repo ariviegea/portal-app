@@ -37,17 +37,17 @@ function textOf(html: string, testId: string): string | undefined {
 
 describe("PortalView", () => {
   describe("heading", () => {
-    it('shows "Repositories" with the id api-traffic-heading, once', () => {
+    it('shows "Repositories" with the id repository-status-heading, once', () => {
       const html = render([npm]);
 
-      expect(html).toMatch(/<h[1-6][^>]*\bid="api-traffic-heading"[^>]*>Repositories<\/h[1-6]>/);
-      expect(html.match(/id="api-traffic-heading"/g)).toHaveLength(1);
+      expect(html).toMatch(/<h[1-6][^>]*\bid="repository-status-heading"[^>]*>Repositories<\/h[1-6]>/);
+      expect(html.match(/id="repository-status-heading"/g)).toHaveLength(1);
     });
 
     it("comes before the API cards", () => {
       const html = render([npm]);
 
-      expect(html.indexOf('id="api-traffic-heading"')).toBeLessThan(html.indexOf('data-testid="source-npm"'));
+      expect(html.indexOf('id="repository-status-heading"')).toBeLessThan(html.indexOf('data-testid="source-npm"'));
     });
 
     it("is shown even when there are no sources", () => {

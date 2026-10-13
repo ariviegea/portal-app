@@ -37,7 +37,7 @@ const Heading = styled.h1`
 export function PortalView({ sources, environments }: { sources: SourceResult[]; environments: EnvironmentResult[] }) {
   return (
     <Stack>
-      <Heading id="api-traffic-heading">Repositories</Heading>
+      <Heading id="repository-status-heading">Repositories</Heading>
       <Grid aria-label="API sources">
         {sources.map((result) =>
           result.status === "ok" ? (
