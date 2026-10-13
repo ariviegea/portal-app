@@ -8,6 +8,11 @@ const nextConfig: NextConfig = {
   compiler: {
     styledComponents: true,
   },
+  // The site has no home page of its own: "/" sends visitors to the portal.
+  // Declared here, the redirect is applied before any page is rendered.
+  async redirects() {
+    return [{ source: "/", destination: "/portal", permanent: false }];
+  },
 };
 
 export default nextConfig;

@@ -1,5 +1,5 @@
 import { defineConfig, devices } from "@playwright/test";
-import { MOCK_API_URL as mockApi, mockAzureEnv } from "./test/mock-settings.mjs";
+import { MOCK_API_URL as mockApi, mockAzureEnv } from "./test/mock-data/mock-settings.mjs";
 
 const APP_PORT = 3100;
 const isCI = !!process.env.CI;
@@ -28,7 +28,7 @@ export default defineConfig({
   ],
   webServer: [
     {
-      command: "node test/mock-api.mjs",
+      command: "node test/mock-data/mock-api.mjs",
       url: `${mockApi}/health`,
       reuseExistingServer: !isCI,
     },
