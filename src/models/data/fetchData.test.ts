@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { sendJson, startServer, type TestServer } from "@/test-utils/httpServer";
-import { fetchJson } from "./fetchJson";
+import { fetchJson, fetchPortalItem } from "./fetchData";
 
 let server: TestServer | undefined;
 
@@ -8,6 +8,64 @@ afterEach(async () => {
   await server?.close();
   server = undefined;
 });
+
+const toItem = (data: Record<string, unknown>) =>
+  typeof data.name === "string" ? { title: data.name, detail: "A detail", href: "https://example.com" } : undefined;
+
+describe("fetchPortalItem", () => {
+  it("fetches the URL and returns the card built from the answer", async () => {
+    const paths: string[] = [];
+    server = await startServer((req, res) => {
+      paths.push(req.url ?? "");
+      sendJson(res, { name: "next" });
+    });
+
+    await expect(fetchPortalItem(`${server.url}/packages/next`, "Example API", toItem)).resolves.toEqual({
+      title: "next",
+      detail: "A detail",
+      href: "https://example.com",
+    });
+    expect(paths).toEqual(["/packages/next"]);
+  });
+
+  it("rejects, naming the API, when the answer cannot be turned into a card", async () => {
+    server = await startServer((_req, res) => sendJson(res, { unexpected: true }));
+
+    await expect(fetchPortalItem(server.url, "Example API", toItem)).rejects.toThrow(
+      "Unexpected response from Example API",
+    );
+  });
+
+  it("rejects an answer that is not an object without calling the converter", async () => {
+    server = await startServer((_req, res) => sendJson(res, ["a", "list"]));
+    let called = false;
+
+    await expect(
+      fetchPortalItem(server.url, "Example API", () => {
+        called = true;
+        return undefined;
+      }),
+    ).rejects.toThrow("Unexpected response from Example API");
+    expect(called).toBe(false);
+  });
+
+  it("passes on a failed request unchanged", async () => {
+    server = await startServer((_req, res) => sendJson(res, { message: "down" }, 503));
+
+    await expect(fetchPortalItem(server.url, "Example API", toItem)).rejects.toThrow("Request failed with status 503");
+  });
+
+  it("lets the converter give its own reason by throwing", async () => {
+    server = await startServer((_req, res) => sendJson(res, { results: [] }));
+
+    await expect(
+      fetchPortalItem(server.url, "Example API", () => {
+        throw new Error("Example API has no such package");
+      }),
+    ).rejects.toThrow("Example API has no such package");
+  });
+});
+
 
 describe("fetchJson", () => {
   it("returns parsed JSON", async () => {

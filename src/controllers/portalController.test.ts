@@ -1,7 +1,7 @@
 import type http from "node:http";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { PortalConfig } from "@/models/azureResources/types";
-import { clearTokenCache } from "@/models/azureResources/azureIdentityModel";
+import { clearTokenCache } from "@/models/azureResources/identity/azureIdentityModel";
 import { azureConfigFor, tokenAnswer } from "@/test-utils/azure";
 import { sendJson, startServer, type TestServer } from "@/test-utils/httpServer";
 import { getPortalData } from "./portalController";

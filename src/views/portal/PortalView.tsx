@@ -23,6 +23,13 @@ const Status = styled.p`
   color: ${theme.color.muted};
 `;
 
+const Heading = styled.h1`
+  margin: 0;
+  font-size: clamp(22px, 5vw, 25px);
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+`;
+
 /**
  * One card per API source: its data, or a message when the source failed.
  * Below them, Azure traffic for the environments that are set up.
@@ -30,6 +37,7 @@ const Status = styled.p`
 export function PortalView({ sources, environments }: { sources: SourceResult[]; environments: EnvironmentResult[] }) {
   return (
     <Stack>
+      <Heading id="repository-status-heading">Repositories</Heading>
       <Grid aria-label="API sources">
         {sources.map((result) =>
           result.status === "ok" ? (

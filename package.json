@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "dev:mock": "node test/dev-with-mock.mjs",
+    "dev:mock": "node test/mock-data/dev-with-mock.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",

@@ -1,4 +1,4 @@
-import { loadConfig } from "@/models/data/config";
+import { loadConfig } from "@/models/data/utils";
 import { getGithubRepo } from "@/models/github/githubRepoModel";
 import { getMavenArtifact } from "@/models/maven/mavenArtifactModel";
 import { getNpmPackage } from "@/models/npmPackage/npmPackageModel";

@@ -26,3 +26,8 @@ export function loadConfig(env: Env = process.env): PortalConfig {
     },
   };
 }
+
+/** Whether a value is a plain object with named fields (not null, not a list). */
+export function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}

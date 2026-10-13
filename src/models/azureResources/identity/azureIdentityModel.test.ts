@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { azureConfigFor, tokenAnswer } from "@/test-utils/azure";
 import { sendJson, startServer, type TestServer } from "@/test-utils/httpServer";
 import { clearTokenCache, getManagementToken } from "./azureIdentityModel";
-import type { AzureConfig } from "./types";
+import type { AzureConfig } from "../types";
 
 let server: TestServer | undefined;
 

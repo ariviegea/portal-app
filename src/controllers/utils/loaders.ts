@@ -1,4 +1,4 @@
-import { getAppMetrics } from "@/models/azureResources/azureMetricsModel";
+import { getAppMetrics } from "@/models/azureResources/metrics/azureMetricsModel";
 import type {
   AzureConfig,
   EnvironmentId,
