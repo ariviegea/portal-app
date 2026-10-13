@@ -2,7 +2,7 @@ import type http from "node:http";
 import { afterEach, describe, expect, it } from "vitest";
 import { azureConfigFor, tokenAnswer } from "@/test-utils/azure";
 import { sendJson, startServer, type TestServer } from "@/test-utils/httpServer";
-import { clearTokenCache } from "./azureIdentityModel";
+import { clearTokenCache } from "../identity/azureIdentityModel";
 import { getAppMetrics } from "./azureMetricsModel";
 
 const RESOURCE_ID = "/subscriptions/sub-1/resourceGroups/rg-1/providers/Microsoft.Web/sites/my-app";

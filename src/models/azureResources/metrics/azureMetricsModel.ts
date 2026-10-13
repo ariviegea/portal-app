@@ -1,7 +1,7 @@
-import { getManagementToken } from "./azureIdentityModel";
-import { fetchJson } from "../data/fetchJson";
-import { isRecord } from "../isRecord";
-import type { AppMetrics, AzureConfig } from "./types";
+import { getManagementToken } from "../identity/azureIdentityModel";
+import { fetchJson } from "../../data/fetchData";
+import { isRecord } from "../../data/utils";
+import type { AppMetrics, AzureConfig } from "../types";
 
 const HOUR_MS = 60 * 60 * 1000;
 
