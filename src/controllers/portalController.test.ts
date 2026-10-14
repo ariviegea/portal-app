@@ -35,10 +35,14 @@ function configWithAzure(baseUrl: string): PortalConfig {
   };
 }
 
-/** One server standing in for all three APIs, routed by path prefix. */
-function threeApis(options: { githubStatus?: number } = {}): http.RequestListener {
+/**
+ * One server standing in for all three APIs, routed by path prefix. Every
+ * request's path is added to `realPath`, when given, so a test can check what was asked for.
+ */
+function threeApis(options: { githubStatus?: number; realPath?: string[] } = {}): http.RequestListener {
   return (req, res) => {
     const path = req.url ?? "";
+    options.realPath?.push(path);
     if (path.startsWith("/npm/")) {
       sendJson(res, { name: "next", version: "16.4.0", description: "The React Framework" });
     } else if (path.startsWith("/maven/")) {
@@ -78,6 +82,33 @@ function threeApis(options: { githubStatus?: number } = {}): http.RequestListene
 }
 
 describe("getPortalData", () => {
+  // These pin down what the portal shows. Changing a package, artifact or
+  // repository in portalController.ts should make one of them fail.
+  describe("asks each API for the item the portal shows", () => {
+    async function requestedPaths(prefix: string): Promise<string[]> {
+      const realPath: string[] = [];
+      server = await startServer(threeApis({ realPath }));
+      await getPortalData(configFor(server.url));
+      return realPath.filter((path) => path.startsWith(prefix));
+    }
+
+    it("npm: the latest release of next", async () => {
+      expect(await requestedPaths("/npm/")).toEqual(["/npm/next/latest"]);
+    });
+
+    it("Maven Central: org.apache.commons:commons-lang3", async () => {
+      const paths = await requestedPaths("/maven/");
+
+      expect(paths).toHaveLength(1);
+      const query = new URL(paths[0] ?? "", "http://test").searchParams;
+      expect(query.get("q")).toBe('g:"org.apache.commons" AND a:"commons-lang3"');
+    });
+
+    it("GitHub: the portal's own repository, vercel/next.js", async () => {
+      expect(await requestedPaths("/github/")).toEqual(["/github/repos/ariviegea/portal-app"]);
+    });
+  });
+
   it("returns one ok result per source", async () => {
     server = await startServer(threeApis());
 
