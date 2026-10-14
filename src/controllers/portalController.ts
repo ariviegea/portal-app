@@ -20,7 +20,7 @@ const sources: Source[] = [
   {
     id: "github",
     label: "GitHub repository",
-    load: (config) => getGithubRepo(config.githubApiUrl, "ariviegea/portal-app"),
+    load: (config) => getGithubRepo(config.githubApiUrl, "vercel/next.js"),
   },
 ];
 
