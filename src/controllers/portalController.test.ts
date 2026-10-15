@@ -105,7 +105,7 @@ describe("getPortalData", () => {
     });
 
     it("GitHub: the portal's own repository, vercel/next.js", async () => {
-      expect(await requestedPaths("/github/")).toEqual(["/github/repos/vercel/next.js"]);
+      expect(await requestedPaths("/github/")).toEqual(["/github/repos/ariviegea/portal-app"]);
     });
   });
 
